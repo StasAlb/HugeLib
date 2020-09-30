@@ -1,0 +1,186 @@
+SCOP - smart card open
+	Protocol
+		protocol - T0, T1, T0T1 (Default)		
+SCCL - smart card close
+	01 - Reset (default), 02 - unpowers
+COMM - вывод комментария в лог
+ARTP - установка типа apdu response 
+	0 стандартный apdu ответ
+	1 формат ответа для idendive mifare plus (статусный байт идет в начале и он один)
+SCEX - smart card exchange
+	APDU.Ln.Data.Le.SW
+		apdu - 4 байта, cla, ins, p1, p2
+		Ln - в инфо целях, можно не ставить вовсе, подчитывается автоматически по data
+		Data
+		Le -  длина ожидаемого ответа
+		SW - если **, то скрипт не будет останавливаться при любом ответе
+		Поддерживает автоматический повтор в ответ на 61xx (00С0...), 6Cxx (повтор с Le=xx)
+SCES - smart card exchange secure
+	SCP.Tp.APDU.Ln.Data.Le.SW
+		SCP - secure channel protocol, 01
+		Tp - 00, 01, 03
+		apdu - 4 байта, cla, ins, p1, p2
+		Ln - в инфо целях, можно не ставить вовсе, подчитывается автоматически по data
+		Data
+		Le -  длина ожидаемого ответа
+		SW - если **, то скрипт не будет останавливаться при любом ответе
+		Поддерживает автоматический повтор в ответ на 61xx (00С0...), 6Cxx (повтор с Le=xx)		
+
+SCMC - smart card macro command
+	LAPP - load applet
+		CapData.block_size.Le
+			capdata - чаще всего вызов #LCAP
+			block_size - сколько байт должно быть в блоке (default 200)
+	GSTA - Get Status (вынесен в макрокоманды, потому что возможен цикл при ответе 6310)
+		Type.Le
+			Type - 20 - executable load files only
+			Le - ожидаемая длина ответа (00 - default) (для протокола T1 - FF)
+	SGPA - перебор kmc для GlobalPlatform Authentication (список ключей в data.ini)
+		IUAnswer.HostChallenge.SL
+			IUAnswer - ответ карты на initialize update
+			SL - P1 external authentication, для подсчета mac
+	MFRD - чтение mifare карт,
+		Tp.StartSector.EndSector.KeyType.Key
+			Tp - 1 - duali, 2 - scmmicro, 3 - acr, 4 - identive
+			KeyType - A,B
+	MFWR - запись mifare карт
+		Tp.StartSector.EndSector.KeyType.Key.Data
+			Tp - 1 - duali, 2 - scmmicro, 3 - acr, 4 - identive, 5 - identive запись plus на sl0
+	MFRK - чтение ключевых секторов
+		Tp.KeyType.Key
+			Key - строка из 16 по порядку
+	MFWK - запись ключевых секторо
+		Tp.KeyType.Key.NewKeys+bits
+
+HSEX - hardware security exchange
+	XOR.Data1.Data2
+	NOT.Data
+	DEEC - des encrypt on clear value
+		MODE.PADDING.KEY.DATA
+			mode - ECB, CBC (default)
+			padding - Z (zeroes - default)
+	TDEC - triple des encrypt on clear value
+		MODE.PADDING.KEY.DATA
+			mode - ECB, CBC (default)
+			padding - Z (zeroes - default)
+	AEEC - aes encrypt  on clear value
+		MODE.PADDING.KEY.DATA
+			mode - ECB, CBC (default)
+			padding - Z (zeroes - default)
+	DEDC - des decrypt on clear value
+		MODE.PADDING.KEY.DATA
+			mode - ECB, CBC (default)
+			padding - Z (zeroes - default)
+	TDDC - triple des decrypt on clear value
+		MODE.PADDING.KEY.DATA.IV
+			mode - ECB, CBC (default)
+			padding - Z (zeroes - default)
+			iv - initializing vector, не обязателен
+	AEDC - aes decrypt on clear value
+		MODE.PADDING.KEY.DATA
+			mode - ECB, CBC (default)
+			padding - Z (zeroes - default)
+	TDDP - triple des decrypt on password
+		MODE.PWD.DATA
+
+	RSDC - rsa decrypt
+		KEY.KEYTYPE.DATA
+	EXAU - external authentication java карты
+		Key.SCP.Diver.KeyData.CardChallenge.HostChallenge.SL
+			SCP - 	01,02
+			Diver - тип диверсификации, 0 - нет (по умолчанию), 1 - по SCP02 (GP), 2 - FutureCard (EMV)
+			SecurityLevel - P1 external authentication, для подcчета mac
+	D8RM - begin rmac session opelio d8 (e-galleon)
+		Key.Diver.SN+Batch.SeqCounter.CardChallenge
+	MAC1 - подпись FullTripleDes
+		KEY.DATA.iv
+			iv - default 00..00 - предыдущий мак
+	MAC1n - подпись FullTripleDes без паддинга
+		
+	MAC2 - подпись SingleDes + FinalTripleDes
+		KEY.DATA.iv
+			iv - default 00..00
+	TCP - послать по TCP
+		DATA
+	CRC16C - расчет crc
+		DATA
+	LRC - расчет lrc кода
+		DATA
+		
+KEYS - keys storage
+	GRSA - generate rsa key
+		GRSA.KeyLength(bits).FileName
+	SRSA - save rsa key
+		SRSA.PB.Name.Modul.Exponent - для публичного ключа
+
+SETV - set value
+	NAME.DATA.SHOW
+		SHOW - выводить ли в лог (Y,N, по умолчанию выводить)
+
+PRSE - parse response
+	TYPE.Response
+		Type
+			SASD - after select aid of security domain
+			INUP - after initialize update
+			CPLC - after getdata cplc
+			GSTA - after get status (вызывается из макрокоманды, но можно и так)
+				последним параметром идет P1 из GetStatus, тогда более подробная расшифровка
+			ARRB - array of bytes (для создания массивов внутри апплета)
+			NN01 - keystorage - readall
+			MFAB - mifare access bits
+			MFDT - парсинг по 16 байт
+			AH2B - выводит ascii в консоль (аналог #STR)
+			FILE - сохраняет данные в файл
+				filename.data
+			BITS - массив байт в массив бит
+			
+DAPR - data preparation - Не сделано
+	VINP - visa inp file
+		KeyName.TrackingNumber
+		
+RSTR - ввод данных, организация паузы
+
+/* */ - закомментарить кусок кода
+
+COFF - console output off
+CON  - console output on
+
+? - подсчет последующей длины - 1 байт
+?? - два байта
+*XXX - значение переменной или ключа
+#CUT - вырезать часть
+	#CUT(откуда, старт (по основанию 0), сколько байт)
+#SCUT - вырезать часть по строкам
+	#SCUT(откуда, строка начало, строка конец)
+#SUBS - вырезать часть, substring
+	#SUBS(откуда, старт (по основанию 0), сколько символов)
+#SPL - split, разделить по разделителю
+	#SPL(откуда, разделитель, номер в массиве)
+#RND - случайное число                         
+	#RND(сколько байт)
+#LCAP - загрузка cab-файла
+	#LCAP(cabname,limit_size)
+		в cabname точку заменить на #
+#PAD80 - паддинг для шифрования + 80 и затем 00 до кратности 8
+	#PAD80(данные)
+#PADI - паддинг
+	#PADI(данные, длина, символ для паддинга)
+#LUHN - подсчет алгоритма Луна (только для цифр), возвращает +один символ
+#ASCII - перевод текстовой строки в ascii-hex
+#866 - str -> AHEX (в досовской кодировке)
+#TEXT - перевод текстовой строки в кодировке
+	#TEXT(данные, кодовая страница)
+#STR - перевод ascii-hex строки в текстовую - в основном для логов (аналог PRSE.AH2B)
+#ATR - получить atr карты
+#GPWD - сгенерить пароль по строке (использование passwordderivebytes)
+#FILE - читать файл
+#LEN - длина данных (аналог ?, но бывает нужен, когда длина идет не непосредственно перед данными
+#TRIM - откидывает пробелы в строке
+#BASE64D
+#BASE64E
+#BITS - формирование байтов по битам
+#RTL - rotate left на 1 байт
+#IF
+	#IF(первая строка, вторая строка, результат если =, результат если !=)
+	если нужно оставить как есть, то в соответствующем результате ставим *ИмяПеременной, которой присваиваем
+
