@@ -126,7 +126,7 @@ namespace HugeLib
         public static string GetDataXml(XmlDocument xd, string address, string ValueName, XmlNamespaceManager xnm)
         {
             try
-            {
+            {                
                 XmlNode xn = null;
                 if (address.Length == 0)
                     xn = xd.FirstChild;

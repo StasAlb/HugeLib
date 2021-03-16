@@ -19,6 +19,7 @@ namespace HugeLib
     {
         private static object lockLog = new object();
         public static bool ToConsole = false;
+        public static bool AddThread = false;
         public static int Level = 0;
 
         public static void WriteToLog(int level, string str, params object[] pars)
@@ -27,8 +28,9 @@ namespace HugeLib
                 return;
             lock (lockLog)
             {
+                string threadId = (AddThread) ? $"{System.Threading.Thread.CurrentThread.ManagedThreadId:000000}\t" : "";
                 DateTime dt = DateTime.Now;
-                string strLog = String.Format("{0:HH.mm.ss}:{1:000}\t", dt, dt.Millisecond);
+                string strLog = threadId + String.Format("{0:HH.mm.ss}:{1:000}\t", dt, dt.Millisecond);
                 strLog += String.Format(str, pars);
                 if (ToConsole)
                     Console.WriteLine(strLog);
